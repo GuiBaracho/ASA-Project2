@@ -12,6 +12,7 @@ using namespace std;
 
 typedef struct {
     int c = WHITE;
+    int anc = -1;
     int p_i = 0;
     int p[2];
 } node;
@@ -22,7 +23,7 @@ void print_parent(vector<node> &parent_list, int nodes){
     int len2;
     for(int i = 1; i <= nodes; i++){
         len2 = parent_list[i].p_i;
-        cout << i << " Color = " << parent_list[i].c << " --->";
+        cout << i << " Color = " << parent_list[i].anc << " --->";
         for(int j = 0; j < len2; j++){
             cout << " " << parent_list[i].p[j];
         }
@@ -32,7 +33,12 @@ void print_parent(vector<node> &parent_list, int nodes){
 // ---------------------------------------
 }
 
-
+void set_white(vector<node> &parent_list){
+    int len = parent_list.size();
+    for(int i = 1; i < len; i++){
+        parent_list[i].c = WHITE;
+    }
+}
 
 void check_visit(vector<node> &parent_list, int v){
     int p_i = parent_list[v].p_i;
@@ -59,30 +65,63 @@ void check(vector<node> &parent_list){
 }
 
 
-void dfs_visit(vector<node> &parent_list, int v, int color){
+void dfs_v1(vector<node> &parent_list, int v){
     int p_i = parent_list[v].p_i;
-    parent_list[v].c = color;
+    parent_list[v].c = BLACK;
+    parent_list[v].anc = V1;
     for(int i = 0; i < p_i; i++){
         int p = parent_list[v].p[i];
-        if (parent_list[p].c == BLACK){
-            dfs_visit(parent_list, p, color);
-        } else if(parent_list[p].c != color){
-            parent_list[p].c = WHITE;
+        if (parent_list[p].c == WHITE){
+            dfs_v1(parent_list, p);
         }
     }
 }
 
-void closest_common_ancester(vector<node> &parent_list, int v1, int v2){
-    dfs_visit(parent_list, v1, V1);
 
-    print_parent(parent_list, 8);
-
-    dfs_visit(parent_list, v2, V2);
-    int len = parent_list.size();
-    for(int i = 1; i < len; i++){
-        if(parent_list[i].c == WHITE){
-        cout << i << " ";
+void dfs_v2(vector<node> &parent_list, int v){
+    int p_i = parent_list[v].p_i;
+    parent_list[v].c = BLACK;
+    if(parent_list[v].anc == V1){
+        parent_list[v].anc = V2;
+    }
+    for(int i = 0; i < p_i; i++){
+        int p = parent_list[v].p[i];
+        if (parent_list[p].c == WHITE){
+            dfs_v2(parent_list, p);
         }
+    }
+}
+
+void closest_common_ancester(vector<node> &parent_list, vector<vector<int>> child_list, int v1, int v2){
+    int control = 0;
+    set_white(parent_list);
+    dfs_v1(parent_list, v1);
+
+    //print_parent(parent_list, 8);
+
+    set_white(parent_list);
+    dfs_v2(parent_list, v2);
+    int len = parent_list.size();
+
+    for(int i = 1; i < len; i++){
+        if(parent_list[i].anc == V2){
+            int len2 = child_list[i].size();
+            int control2 = 0;
+            for(int j = 0; j < len2; j++){
+                if(parent_list[child_list[i][j]].anc == V2){
+                    control2 = 1;
+                }
+            }
+            if(control2 == 0){
+                cout << i << " ";
+                control = 1;
+            }
+        }
+    }
+
+
+    if(control == 0){
+        cout << "-";
     }
     cout << endl;
 }
@@ -97,6 +136,7 @@ int main() {
 
     int parent, child;
     vector<node> parent_list (nodes + 1);
+    vector<vector<int>> child_list (nodes + 1);
     
     for(int i = 0; i < edges; i++){
         scanf("%d %d", &parent, &child);
@@ -106,15 +146,16 @@ int main() {
             return 0;
         }
         parent_list[child].p[p_i] = parent;
-        parent_list[child].p_i++;        
+        parent_list[child].p_i++;
+        child_list[parent].push_back(child);
     }
-    
+
     check(parent_list);
 
-    closest_common_ancester(parent_list, v1, v2);
+    closest_common_ancester(parent_list, child_list, v1, v2);
     
 
-    print_parent(parent_list, 8);
+    //print_parent(parent_list, 8);
 
     return 0;
 }
